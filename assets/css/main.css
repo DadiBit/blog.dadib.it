@@ -49,9 +49,12 @@ p {
 section, aside, footer {
     margin: 2.5rem auto;
 }
-*+ul, *+ol, *+table {
+*+ul, *+ol {
     margin-top: -.25rem;
     margin-bottom: 1.25rem;
+}
+*+table {
+    margin-bottom: 1rem;
 }
 b, code.highlighter-rouge {
     background-color: rgba(180,175,170,0.15);
