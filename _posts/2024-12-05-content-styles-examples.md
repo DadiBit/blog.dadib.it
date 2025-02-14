@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "Content styles examples"
+description: "Demonstrating DadiBit's blog Jekyll theme"
 ---
 
 The basic text modifiers are **strong** and _italic_.

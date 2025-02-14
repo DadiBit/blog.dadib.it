@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "Come non pagare le tasse con le crypto"
+description: "La Chaddazione conferma che le crypto non sono sequestrabili preventivamente: vittoria per i cryptobros!"
 ---
 
 Non approvo l'evasione fiscale (fin troppi non collaborano alle spese della società...), tuttavia ho recentemente letto [un articolo](https://www.brocardi.it/notizie-giuridiche/come-pagare-tasse-investire-bitcoin-evita-sequestro-preventivo-ecco/5012.html) che spiega come i Bitcoin, non avendo un corso legale, non sono oggetto di sequestro preventivo. Che ridere!

@@ -1,6 +1,7 @@
 ---
 layout: page
 title: About
+description: About DadiBit's blog
 ---
 
 How is this server simple & accessible?
