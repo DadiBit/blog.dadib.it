@@ -6,7 +6,7 @@ body {
     max-width: 600px;
     max-width: 55ch;
     margin: 0 auto;
-    padding: 2.5rem 1.75rem;
+    padding: 1rem 1.75rem;
 }
 nav {
     padding: 1.2rem .4rem;
@@ -15,7 +15,7 @@ nav {
 header {
     outline: 2px solid #ddd;
     outline-offset: 1rem;
-    margin-bottom: 3rem;
+    margin: 3rem 0;
 }
 h1, h2, h3, h4, h5, h6 {
     line-height: 1.2; 
