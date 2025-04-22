@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Alpine data disk setup on a Raspberry PI 4B"
-description: "A somewhat lengthy guide "
+description: "A somewhat lengthy guide"
 ---
 
 ## Stuff used
@@ -43,15 +43,15 @@ Let's start with an empty, clean disk.
 
 > `lbu` can `commit` to a path, however the apkovl backup must be at the root of the partition so it can be discovered at boot.
 
-Here is a list of option you have on how to identify the device (`/dev/sdg`) of the disk:
+Here is a list of option you have on how to identify the device (`/dev/sdX`) of the disk:
  - use `lsblk`
  - hot-plug the disk after boot and use `dmesg` to see what the kernel tells you
  - use `df`
  - use the Disks application in GNOME: hot-plug the device and it should pop up in the list of devices
 
-> If you see multiple partitions, like `/dev/sdg2` or `/dev/sdg6` you should double check if it's the correct device
+> If you see multiple partitions, like `/dev/sdX2` or `/dev/sdX6` you should double check if it's the correct device
 
-I am going to use `gdisk` to partition my disk, since I want to use the e`x`pert menu to `w`rite the partition layout. After typing `sudo gdisk /dev/sdg`:
+I am going to use `gdisk` to partition my disk, since I want to use the e`x`pert menu to `w`rite the partition layout. After typing `sudo gdisk /dev/sdX`:
 ```
 o # Create new parition table
 Y # Confirm
@@ -84,20 +84,20 @@ w # Write and exit from gdisk
 Y # Confirm
 ```
 
-You should now have three partitions. Check it by issuing: `sudo blkid /dev/sdg?` (`?` is a wildcard to pick any digit)
+You should now have three partitions. Check it by issuing: `sudo blkid /dev/sdX?` (`?` is a wildcard to pick any digit)
 
 Now format the partitions with:
 ```
 # Format the boot partition as FAT32, so we can modify cmdline.txt and usercfg.txt from windows
-sudo mkfs.vfat -F 32 /dev/sdg1
+sudo mkfs.vfat -F 32 /dev/sdX1
 
 # Disable journaling and 64 bit ext4 options "to reduce write operations and allow the disk to
 # spin down after the .apkovl and the packages have been read from the partition during the boot"
 # See: https://wiki.alpinelinux.org/wiki/Diskless_Mode
-sudo mkfs.ext4 -O ^has_journal,^64bit /dev/sdg2
+sudo mkfs.ext4 -O ^has_journal,^64bit /dev/sdX2
 
 # Variable data needs journaling to make sure that even on power loss we can recover
-sudo mkfs.ext4 /dev/sdg3
+sudo mkfs.ext4 /dev/sdX3
 ```
 Please be patient with ext4, since it may take a bit of time on big and slow disks (ie, 4TB+ external HDDs)
 
@@ -106,7 +106,7 @@ Please be patient with ext4, since it may take a bit of time on big and slow dis
 > Please note that the following commands use `sudo` since official docs use `--same-owner`, which extracts stuff as if owned by root (uid 0, gid 0)
 > Being a FAT32 partition it's fine to omit this option and work as non root (use fuse to mount device).
 
-Mount as superuser the first partition with `sudo mount /dev/sdg1 /mnt`.
+Mount as superuser the first partition with `sudo mount /dev/sdX1 /mnt`.
 
 Push the mount directory with `pushd /mnt` and issue (after replacing `~/Downloads` with the path where you downloaded the tarball):
 ```
@@ -252,7 +252,7 @@ You may now set the fsck (last) field of the `/var` entry (`/dev/sda3` in my cas
 
 #### LBU seutp
 
-Now set `LBU_PATH=/media/setup` within `/etc/lbu/lbu.conf`.
+Now set `LBU_BACKUPDIR=/media/setup/` within `/etc/lbu/lbu.conf`.
 
 You can finally `lbu commit` and `reboot`.
 
@@ -284,7 +284,7 @@ Insert the password and login with `ssh <user>@<ip>`. Do not forget to `lbu comm
 
 `poweroff` your raspberry and plug the disk back in your desktop.
 
-Make sure to mount the boot partition (`/dev/sdg1` previously) as **read-write** (default, unless you're working live from your alpine system)
+Make sure to mount the boot partition (`/dev/sdX1` previously) as **read-write** (default, unless you're working live from your alpine system)
 
 ### Update bootable read-only system
 
