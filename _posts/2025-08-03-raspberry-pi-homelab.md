@@ -4,7 +4,7 @@ title: "Raspberry PI Homelab"
 description: "A long post on my minimal NAS/Homelab configuration on a Raspberry PI 4"
 ---
 
-# Services
+## Services
 
 1. NAS: there are a lot of options to pick from, more on that later
 2. Tailscale: access all of my services even when I am outside of my LAN
