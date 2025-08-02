@@ -4,32 +4,34 @@ title: "Alpine data disk setup on a Raspberry PI 4B"
 description: "A somewhat lengthy guide"
 ---
 
+> This post was updated on the 3rd of August 2025.
+
 ## Stuff used
 
 - **Raspberry Pi 4B 4GB rev 1.2**
 - A Seagate 4 TB USB 3.0 external HDD
-- Alpine 3.21.3 (rpi)
-- Kernel 6.12.13 (rpi)
+- Alpine 3.22.1 (rpi)
 
-Although the installation media was prepared on a Fedora 41 machine, the same process can be achieved by unzipping with 7-zip the tarball on windows and installing GPT/ext4 related packages (`apk add gptfdisk e2fsprogs`) within Alpine after running `setup-alpine` (see [docs](https://wiki.alpinelinux.org/wiki/Setting_up_disks_manually#Manual_partitioning))
+Although the installation media was prepared on a Fedora 41 machine, the same process can be achieved by unzipping using 7-zip the tarball on Windows and installing GPT/ext4 related packages (`apk add gptfdisk e2fsprogs`) within Alpine after running `setup-alpine` (see [docs](https://wiki.alpinelinux.org/wiki/Setting_up_disks_manually#Manual_partitioning))
 
 > Consider creating a `setup.md` file with this guide (or part of it) on the bootable media so you can always `vi`/`cat` it on the fly from within Alpine. ([source code](https://github.com/DadiBit/blog.dadib.it/tree/main/_posts))
 
 ## Image download
 
-1. Head over to [the official website](https://alpinelinux.org/downloads/) 
-2. Click on the first `aarch64` label (should download a tar.gz)
-3. Download the relative sha256 checksum and the GPG sign as well
-4. Open a terminal and type the following:
+1. Head over to [the official website](https://alpinelinux.org/downloads/)
+2. Find the Raspberry PI dedicated section
+3. Click on the first `aarch64` label (should download a tar.gz)
+4. Download the relative sha256 checksum and the GPG sign as well
+5. Open a terminal and type the following:
 
-```
+```shell
 curl https://alpinelinux.org/keys/ncopa.asc | gpg --import ;
 gpg --verify alpine-*.tar.gz.asc
 # Ignore warning of not being able to verify that the key belongs to the owner
 sha256sum -c alpine-*.tar.gz.sha256
 ```
 
-5. If verification went smoothly we're ready to create a bootable media
+If verification went smoothly we're ready to create a bootable media
 
 ## Disk paritioning
 
@@ -43,7 +45,7 @@ Let's start with an empty, clean disk.
 
 > `lbu` can `commit` to a path, however the apkovl backup must be at the root of the partition so it can be discovered at boot.
 
-Here is a list of option you have on how to identify the device (`/dev/sdX`) of the disk:
+Here is a list of options you have on how to identify the device (`/dev/sdX`) of the disk:
  - use `lsblk`
  - hot-plug the disk after boot and use `dmesg` to see what the kernel tells you
  - use `df`
@@ -59,7 +61,7 @@ Y # Confirm
 n # Create new partition
 <enter> # First partiion
 <enter> # Default is fine
-+100M # Size
++200M # Size
 ef00 # EFI system partition
 
 n # Create new partition
@@ -87,8 +89,8 @@ Y # Confirm
 You should now have three partitions. Check it by issuing: `sudo blkid /dev/sdX?` (`?` is a wildcard to pick any digit)
 
 Now format the partitions with:
-```
-# Format the boot partition as FAT32, so we can modify cmdline.txt and usercfg.txt from windows
+```shell
+# Format the boot partition as FAT32, so we can modify cmdline.txt and usercfg.txt from Windows
 sudo mkfs.vfat -F 32 /dev/sdX1
 
 # Disable journaling and 64 bit ext4 options "to reduce write operations and allow the disk to
@@ -104,7 +106,7 @@ Please be patient with ext4, since it may take a bit of time on big and slow dis
 ## Bootable device
 
 > Please note that the following commands use `sudo` since official docs use `--same-owner`, which extracts stuff as if owned by root (uid 0, gid 0)
-> Being a FAT32 partition it's fine to omit this option and work as non root (use fuse to mount device).
+> Being a FAT32 partition it's fine to omit this option and work as non root (using fuse to mount the device).
 
 Mount as superuser the first partition with `sudo mount /dev/sdX1 /mnt`.
 
@@ -119,7 +121,7 @@ sudo tar -p -s --atime-preserve --same-owner --one-top-level=$PWD -zxvf ~/Downlo
 > Also, please note that if you want to touch as little as possible the boot partition, consider storing it in the second partition, or on a server!
 
 Create a `setup-answers` file, with you favorite editor within the `/mnt` boot partition mountpoint with the following content:
-```
+```shell
 # Use US layout with US-INTL variant
 KEYMAPOPTS="us us-intl"
 
@@ -131,7 +133,9 @@ INTERFACESOPTS="auto lo
 iface lo inet loopback
 
 auto eth0
-iface eth0 inet dhcp
+iface eth0 inet
+    address 192.168.1.106/24
+    gateway 192.168.1.1
     hostname coffee
 "
 
@@ -146,8 +150,8 @@ APKREPOSOPTS="-1"
 
 # Prompt non-root user creation
 
-# Install Dropbear
-SSHDOPTS="-c dropbear"
+# Install OpenSSH - this is needed for sftp and scp support
+SSHDOPTS="-c openssh"
 
 # Use chrony
 NTPOPTS="-c chrony"
@@ -159,7 +163,7 @@ APKCACHEOPTS="none"
 ```
 
 I couldn't get `setup-disk` to work in data mode on the `/dev/sda3` partition, so I had to manually edit fstab (which is good, since I get to customize my install). A working `fstab`:
-```
+```shell
 # This is the standard Alpine boot image.
 # You may wipe all other partitions, reboot and be able to start from scratch 
 /dev/sda1       /media/boot     vfat    defaults,ro 0 0
@@ -173,10 +177,9 @@ I couldn't get `setup-disk` to work in data mode on the `/dev/sda3` partition, s
 ```
 
 > We use `0` in the last field, skipping fsck: it's not installed by default at system boot. We can enable it later on with the apk cache.
+> You may consider adding the `noatime` option on ext4 partitions to prevent access times writing (reducing writes to disk).
 
 After saving and closing the file you may now pop the directory with `popd` and unmount the disk with `sudo umount /mnt`.
-
-You may consider adding the `noatime` option on ext4 partitions to prevent access times writing (reducing writes to disk).
 
 ## First boot
 
@@ -184,6 +187,7 @@ You may consider adding the `noatime` option on ext4 partitions to prevent acces
 2. Connect the HDMI/micro HDMI cable
 3. Plug in usb keyboard
 4. Plug in the power plug
+5. Insert `root` when prompted to login
 
 > If your keyboard is backlit turn it off or use a different one - the USB hub can't output enough watts to a spinning HDD **and** the rainbow keyboard
 
@@ -191,14 +195,14 @@ You may consider adding the `noatime` option on ext4 partitions to prevent acces
 
 First of all we need to locate the answers file by using `ls`. It should be either in `/media/usb/` or `/media/sda1/`.
 
-Now issue a `setup-alpine -f /media/sda1/setup-answers` and provide the root password and optionally create a non-root user.
+Now issue a `setup-alpine -f /media/sda1/setup-answers` and provide the root password and optionally create a non-root user. Provide a space separated list of DNS servers (i.e. `1.1.1.1 1.0.0.1`) in order to resolve the mirrors domain names.
 
 You now have a configured environment with internet synced time and a working package manager.
 
 ### Manual disk setup
 
 Override the fstab with:
-```
+```shell
 cp /media/sda1/fstab /etc/fstab
 # Make sure everyone can read it, but only root can write to it
 chown root:root /etc/fstab
@@ -206,13 +210,13 @@ chmod 644 /etc/fstab
 ```
 
 Make sure all media mountpoints exist:
-```
+```shell
 mkdir /media/boot
 mkdir /media/setup
 ```
 
 Mount both media devices:
-```
+```shell
 mount /dev/sda1
 mount /dev/sda2
 ```
@@ -224,7 +228,7 @@ Add rsync package: `apk add rsync`
 Remove apk cache before copying variable data: `rm -rf /var/cache/apk`
 
 Mount and copy the `/var` directory over to the partition:
-```
+```shell
 mount /dev/sda3 /mnt
 rsync -Pa /var/ /mnt/
 umount /mnt
@@ -250,7 +254,7 @@ You may now set the fsck (last) field of the `/var` entry (`/dev/sda3` in my cas
 
 > Feel free to fsck the `/media/setup` fstab entry too.
 
-#### LBU seutp
+#### LBU seutpripped DVDs/CDs
 
 Now set `LBU_BACKUPDIR=/media/setup/` within `/etc/lbu/lbu.conf`.
 
@@ -260,10 +264,10 @@ You can finally `lbu commit` and `reboot`.
 
 - If you see your hostname at login then LBU was configured correctly
 - If you see fsck stating that `/dev/sda3` is clean at boot the apk cache was configured correctly
-- Alternatively, if you see dropbear being loaded at boot the apk cache was configured correctly
+- Alternatively, if you see openssh being loaded at boot the apk cache was configured correctly
 
-Upadte the apk indecies and fetch new package versions:
-```
+Update the apk indecies and fetch new package versions:
+```shell
 apk update
 apk upgrade
 ```
@@ -276,9 +280,26 @@ Run `doas whoami`, insert your normal user password and make sure it outputs `ro
 
 #### Check non-root ssh login
 
-You can already copy over your key with `ssh-copy-id <user>@<ip>`.
+You can already copy over your key with `ssh-copy-id <user>@<ip>` from your workstation.
 
 Insert the password and login with `ssh <user>@<ip>`. Do not forget to `lbu commit` after adding the key.
+
+#### Allow root login
+
+> This is required if you skipped the user creation step
+
+Open the `/etc/ssh/sshd_config` configuration and uncomment `PermitRootLogin yes`.
+
+Do not forget to `lbu commit` and also `rc-service sshd restart`.
+
+Now do `ssh-copy-id root@<ip>` from your workstation. Log back in the Raspberry via `ssh root@<ip>`.
+
+Remember to include the authorized keys to lbu commitable list via:
+```shell
+lbu include /root/.ssh/authorized_keys
+```
+
+Again, do not forget to `lbu commit` once you've added it.
 
 ## Final tweaks on boot parition
 
@@ -319,6 +340,8 @@ Here's a list of files you don't need to boot a Raspberry Pi 4B:
 
 You may then also remove all `*.dtb` files, excluding `bcm2711-rpi-4-b.dtb`.
 
+> If you see the rainbow screen it means that you accidentaly removed the required dtb file for your board.
+
 Please check the [official docs](https://www.raspberrypi.com/documentation/computers/configuration.html#boot-folder-contents) to know what can be removed.
 
 ### Update firmware
@@ -343,10 +366,9 @@ Now set `gpu_mem=16` in config.txt (not usercfg.txt, as it's included from confi
 
 You may remove non-cut-down binary (elf) and linker (dat) files.
 
-# (Optional) Flash USB-favourable eeprom
+### (Optional) Flash USB-favourable eeprom
 
 With the aid of the Raspberry Pi imager utility you can flash the most up-to-date eeprom version, possibly with "USB-over-uSD preference".
  - Poweroff the device
  - Insert just the sd card
  - Power device on and wait for green flashing/green screen
-
