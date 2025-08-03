@@ -45,12 +45,15 @@ Subsystem       sftp    internal-sftp
 
 # Example of overriding settings on a per-group basis
 Match Group homelab
-        ChrootDirectory /var/sftp
-        ForceCommand internal-sftp -d /%u
         PermitTunnel no
         AllowAgentForwarding no
         AllowTcpForwarding no
         X11Forwarding no
+
+# All users in homelab, excluding davide, are forced to use sftp only. even if the shell in /etc/passwd says otherwise
+Match Group homelab User !davide
+        ChrootDirectory /var/sftp
+        ForceCommand internal-sftp -d /%u
         PermitTTY no
 ```
 
